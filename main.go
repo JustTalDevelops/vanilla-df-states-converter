@@ -11,6 +11,11 @@ import (
 	"os"
 )
 
+type BlockState struct {
+	Block world.BlockState `nbt:"block"`
+	ID    int32            `nbt:"id"`
+}
+
 func main() {
 	// Read arguments and error if there are too little
 	args := os.Args[1:]
@@ -30,26 +35,25 @@ func main() {
 		panic(err)
 	}
 
-	// The vanilla pallete that the vanilla states are unmarshalled into temporarily.
-	var vanillaPallete struct {
-		Blocks []world.BlockState `nbt:"blocks"`
+	// The vanilla palette that the vanilla states are unmarshalled into temporarily.
+	var vanillaPalette struct {
+		Blocks []BlockState `nbt:"blocks"`
 	}
 
 	// The vanilla states are gzip compressed, so before we can unmarshal them, we decompress them.
 	gr, err := gzip.NewReader(bytes.NewBuffer(b))
-	if err != nil {
-		panic(err)
-	}
-	defer gr.Close()
+	if err == nil {
+		// Read the bytes from the IO reader
+		b, err = ioutil.ReadAll(gr)
+		if err != nil {
+			panic(err)
+		}
 
-	// Read the bytes from the IO reader
-	data, err := ioutil.ReadAll(gr)
-	if err != nil {
-		panic(err)
+		defer gr.Close()
 	}
 
-	// Unmarshal the bytes into the vanilla pallete with BigEndian encoding.
-	err = nbt.UnmarshalEncoding(data, &vanillaPallete, nbt.BigEndian)
+	// Unmarshal the bytes into the vanilla palette with BigEndian encoding.
+	err = nbt.UnmarshalEncoding(b, &vanillaPalette, nbt.BigEndian)
 	if err != nil {
 		panic(err)
 	}
@@ -59,7 +63,7 @@ func main() {
 	e := nbt.NewEncoder(buff)
 
 	// Encode every block state and add it to the buffer
-	for _, s := range vanillaPallete.Blocks {
+	for _, s := range vanillaPalette.Blocks {
 		err := e.Encode(&s)
 		if err != nil {
 			panic(err)
