@@ -64,7 +64,7 @@ func main() {
 
 	// Encode every block state and add it to the buffer
 	for _, s := range vanillaPalette.Blocks {
-		err := e.Encode(&s)
+		err := e.Encode(&s.Block)
 		if err != nil {
 			panic(err)
 		}
