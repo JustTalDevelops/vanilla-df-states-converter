@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
-	"encoding/base64"
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
@@ -11,17 +10,11 @@ import (
 	"os"
 )
 
-type BlockState struct {
-	Block world.BlockState `nbt:"block"`
-	ID    int32            `nbt:"id"`
-}
-
 func main() {
 	// Read arguments and error if there are too little
 	args := os.Args[1:]
 	if len(args) < 2 {
-		fmt.Println("Usage: vanilla-df-states-converter.exe vanilla-pallete.nbt output.txt")
-		fmt.Println("Output is returned in base64 with no gzip.")
+		fmt.Println("Usage: vanilla-df-states-converter.exe vanilla-pallete.nbt output.nbt")
 		return
 	}
 
@@ -37,7 +30,7 @@ func main() {
 
 	// The vanilla palette that the vanilla states are unmarshalled into temporarily.
 	var vanillaPalette struct {
-		Blocks []BlockState `nbt:"blocks"`
+		Blocks []world.BlockState `nbt:"blocks"`
 	}
 
 	// The vanilla states are gzip compressed, so before we can unmarshal them, we decompress them.
@@ -59,19 +52,19 @@ func main() {
 	}
 
 	// Create a new encoder with an empty byte buffer
-	buff := bytes.NewBuffer([]byte{})
-	e := nbt.NewEncoder(buff)
+	buf := new(bytes.Buffer)
+	e := nbt.NewEncoder(buf)
 
 	// Encode every block state and add it to the buffer
 	for _, s := range vanillaPalette.Blocks {
-		err := e.Encode(&s.Block)
+		err := e.Encode(&s)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	// Write the output bytes to a file in base64
-	err = ioutil.WriteFile(outputFile, []byte(base64.StdEncoding.EncodeToString(buff.Bytes())), 0777)
+	// Write the output bytes to a file
+	err = ioutil.WriteFile(outputFile, buf.Bytes(), 0777)
 	if err != nil {
 		panic(err)
 	}
